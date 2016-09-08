@@ -2,13 +2,14 @@
 namespace GuzzleHttp\Exception;
 
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Client\Exception\NetworkException;
 
 /**
  * Exception thrown when a connection cannot be established.
  *
  * Note that no response is present for a ConnectException
  */
-class ConnectException extends RequestException
+class ConnectException extends RequestException implements NetworkException
 {
     public function __construct(
         $message,

@@ -4,11 +4,12 @@ namespace GuzzleHttp\Exception;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use GuzzleHttp\Promise\PromiseInterface;
+use Psr\Http\Client\Exception\RequestException as PsrRequestException;
 
 /**
  * HTTP Request exception
  */
-class RequestException extends TransferException
+class RequestException extends TransferException implements PsrRequestException
 {
     /** @var RequestInterface */
     private $request;

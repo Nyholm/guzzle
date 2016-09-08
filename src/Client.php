@@ -7,6 +7,8 @@ use GuzzleHttp\Psr7;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Client\HttpClient;
+
 
 /**
  * @method ResponseInterface get(string|UriInterface $uri, array $options = [])
@@ -22,7 +24,7 @@ use Psr\Http\Message\ResponseInterface;
  * @method Promise\PromiseInterface patchAsync(string|UriInterface $uri, array $options = [])
  * @method Promise\PromiseInterface deleteAsync(string|UriInterface $uri, array $options = [])
  */
-class Client implements ClientInterface
+class Client implements ClientInterface, HttpClient
 {
     /** @var array Default request options */
     private $config;
@@ -102,6 +104,18 @@ class Client implements ClientInterface
     {
         $options[RequestOptions::SYNCHRONOUS] = true;
         return $this->sendAsync($request, $options)->wait();
+    }
+
+    /**
+     * This method exists to be compatible with PSR-X
+     *
+     * @param RequestInterface $request
+     *
+     * @return ResponseInterface
+     */
+    public function sendRequest(RequestInterface $request)
+    {
+        return $this->send($request);
     }
 
     public function requestAsync($method, $uri = '', array $options = [])

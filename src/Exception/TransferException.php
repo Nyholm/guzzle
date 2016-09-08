@@ -1,4 +1,6 @@
 <?php
 namespace GuzzleHttp\Exception;
 
-class TransferException extends \RuntimeException implements GuzzleException {}
+use Psr\Http\Client\Exception;
+
+class TransferException extends \RuntimeException implements GuzzleException, Exception {}
