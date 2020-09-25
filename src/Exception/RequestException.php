@@ -2,6 +2,7 @@
 
 namespace GuzzleHttp\Exception;
 
+use GuzzleHttp\Utils;
 use Psr\Http\Client\RequestExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -102,7 +103,7 @@ class RequestException extends TransferException implements RequestExceptionInte
             $response->getReasonPhrase()
         );
 
-        $summary = \GuzzleHttp\Psr7\Message::bodySummary($response);
+        $summary = Utils::bodySummary($response);
 
         if ($summary !== null) {
             $message .= ":\n{$summary}\n";

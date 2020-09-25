@@ -7,9 +7,10 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\PromiseInterface;
-use GuzzleHttp\Psr7\LazyOpenStream;
+use GuzzleHttp\Stream\LazyOpenStream;
 use GuzzleHttp\TransferStats;
 use GuzzleHttp\Utils;
+use Nyholm\Psr7\Stream;
 use Psr\Http\Message\RequestInterface;
 
 /**
@@ -413,7 +414,7 @@ class CurlFactory implements CurlFactoryInterface
             }
             $sink = $options['sink'];
             if (!\is_string($sink)) {
-                $sink = \GuzzleHttp\Psr7\stream_for($sink);
+                $sink = Stream::create($sink);
             } elseif (!\is_dir(\dirname($sink))) {
                 // Ensure that the directory exists before failing in curl.
                 throw new \RuntimeException(\sprintf(

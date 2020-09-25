@@ -186,17 +186,18 @@ class StreamHandlerTest extends TestCase
     public function testAutomaticallyDecompressGzip()
     {
         Server::flush();
-        $content = \gzencode('test');
+        $plain = 'testBar';
+        $content = \gzencode($plain);
         Server::enqueue([
             new Response(200, [
                 'Content-Encoding' => 'gzip',
-                'Content-Length'   => \strlen($content),
+                'Content-Length'   => $x = \strlen($content),
             ], $content)
         ]);
         $handler = new StreamHandler();
         $request = new Request('GET', Server::$url);
         $response = $handler($request, ['decode_content' => true])->wait();
-        self::assertSame('test', (string) $response->getBody());
+        self::assertSame($plain, (string) $response->getBody());
         self::assertFalse($response->hasHeader('content-encoding'));
         self::assertTrue(!$response->hasHeader('content-length') || $response->getHeaderLine('content-length') == $response->getBody()->getSize());
     }
@@ -308,7 +309,7 @@ class StreamHandlerTest extends TestCase
     public function testVerifyCanBeDisabled()
     {
         $handler = $this->getSendResult(['verify' => false]);
-        self::assertInstanceOf(Response::class, $handler);
+        self::assertInstanceOf(ResponseInterface::class, $handler);
     }
 
     public function testVerifiesCertIfValidPath()

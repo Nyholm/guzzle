@@ -3,7 +3,10 @@
 namespace GuzzleHttp\Test;
 
 use GuzzleHttp;
+use GuzzleHttp\Psr7\FnStream;
 use GuzzleHttp\Utils;
+use Nyholm\Psr7\Response;
+use Nyholm\Psr7\Stream;
 use PHPUnit\Framework\TestCase;
 
 class UtilsTest extends TestCase
@@ -185,6 +188,98 @@ class UtilsTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         \GuzzleHttp\json_decode('{{]]');
+    }
+
+    public function testCopiesToStream()
+    {
+        $s1 = Stream::create('foobaz');
+        $s1->rewind();
+        $s2 = Stream::create('');
+        Utils::copyToStream($s1, $s2);
+        self::assertSame('foobaz', (string)$s2);
+        $s2 = Stream::create('');
+        $s1->seek(0);
+        Utils::copyToStream($s1, $s2, 3);
+        self::assertSame('foo', (string)$s2);
+        Utils::copyToStream($s1, $s2, 3);
+        self::assertSame('foobaz', (string)$s2);
+    }
+
+    public function testStopsCopyToStreamWhenWriteFails()
+    {
+        $s1 = Stream::create('foobaz');
+        $s2 = Stream::create('');
+        $s2 = FnStream::decorate($s2, [
+            'write' => static function () {
+                return 0;
+            },
+        ]);
+        Utils::copyToStream($s1, $s2);
+        self::assertSame('', (string)$s2);
+    }
+
+    public function testStopsCopyToSteamWhenWriteFailsWithMaxLen()
+    {
+        $s1 = Stream::create('foobaz');
+        $s2 = Stream::create('');
+        $s2 = FnStream::decorate($s2, [
+            'write' => static function () {
+                return 0;
+            },
+        ]);
+        Utils::copyToStream($s1, $s2, 10);
+        self::assertSame('', (string)$s2);
+    }
+
+    public function testStopsCopyToSteamWhenReadFailsWithMaxLen()
+    {
+        $s1 = Stream::create('foobaz');
+        $s1 = FnStream::decorate($s1, [
+            'read' => static function () {
+                return '';
+            },
+        ]);
+        $s2 = Stream::create('');
+        Utils::copyToStream($s1, $s2, 10);
+        self::assertSame('', (string)$s2);
+    }
+
+    public function testOpensFilesSuccessfully()
+    {
+        $r = Utils::tryFopen(__FILE__, 'r');
+        self::assertIsResource($r);
+        fclose($r);
+    }
+
+    public function testThrowsExceptionNotWarning()
+    {
+        $this->expectException('RuntimeException', 'Unable to open /path/to/does/not/exist using mode r');
+
+        Utils::tryFopen('/path/to/does/not/exist', 'r');
+    }
+
+    public function testMessageBodySummaryWithSmallBody()
+    {
+        $message = new Response(200, [], 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.');
+        self::assertSame('Lorem ipsum dolor sit amet, consectetur adipiscing elit.', Utils::bodySummary($message));
+    }
+
+    public function testMessageBodySummaryWithLargeBody()
+    {
+        $message = new Response(200, [], 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.');
+        self::assertSame('Lorem ipsu (truncated...)', Utils::bodySummary($message, 10));
+    }
+
+    public function testMessageBodySummaryWithSpecialUTF8Characters()
+    {
+        $message = new Response(200, [], '’é€௵ဪ‱');
+        self::assertSame('’é€௵ဪ‱', Utils::bodySummary($message));
+    }
+
+    public function testMessageBodySummaryWithEmptyBody()
+    {
+        $message = new Response(200, [], '');
+        self::assertNull(Utils::bodySummary($message));
     }
 }
 

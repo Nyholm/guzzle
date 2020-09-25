@@ -7,6 +7,8 @@ use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\Handler\CurlMultiHandler;
 use GuzzleHttp\Handler\Proxy;
 use GuzzleHttp\Handler\StreamHandler;
+use Psr\Http\Message\MessageInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
 
 final class Utils
@@ -390,5 +392,122 @@ EOT
         }
 
         throw new \Error('ext-idn or symfony/polyfill-intl-idn not loaded or too old');
+    }
+
+    /**
+     * Get a short summary of the message body.
+     *
+     * Will return `null` if the response is not printable.
+     *
+     * @param MessageInterface $message    The message to get the body summary
+     * @param int              $truncateAt The maximum allowed size of the summary
+     *
+     * @return string|null
+     *
+     * @internal
+     */
+    public static function bodySummary(MessageInterface $message, $truncateAt = 120)
+    {
+        $body = $message->getBody();
+
+        if (!$body->isSeekable() || !$body->isReadable()) {
+            return null;
+        }
+
+        $size = $body->getSize();
+
+        if ($size === 0) {
+            return null;
+        }
+
+        if ($body->isSeekable()) {
+            $body->rewind();
+        }
+        $summary = $body->read($truncateAt);
+
+        if ($size > $truncateAt) {
+            $summary .= ' (truncated...)';
+        }
+
+        // Matches any printable character, including unicode characters:
+        // letters, marks, numbers, punctuation, spacing, and separators.
+        if (preg_match('/[^\pL\pM\pN\pP\pS\pZ\n\r\t]/u', $summary)) {
+            return null;
+        }
+
+        return $summary;
+    }
+
+    /**
+     * Safely opens a PHP stream resource using a filename.
+     *
+     * When fopen fails, PHP normally raises a warning. This function adds an
+     * error handler that checks for errors and throws an exception instead.
+     *
+     * @param string $filename File to open
+     * @param string $mode     Mode used to open the file
+     *
+     * @return resource
+     *
+     * @throws \RuntimeException if the file cannot be opened
+     *
+     * @internal
+     */
+    public static function tryFopen($filename, $mode)
+    {
+        $ex = null;
+        set_error_handler(static function () use ($filename, $mode, &$ex) {
+            $ex = new \RuntimeException(sprintf(
+                'Unable to open %s using mode %s: %s',
+                $filename,
+                $mode,
+                func_get_args()[1]
+            ));
+        });
+
+        $handle = fopen($filename, $mode);
+        restore_error_handler();
+
+        if ($ex) {
+            /** @var $ex \RuntimeException */
+            throw $ex;
+        }
+
+        return $handle;
+    }
+
+    /**
+     * Copy the contents of a stream into another stream until the given number
+     * of bytes have been read.
+     *
+     * @param StreamInterface $source Stream to read from
+     * @param StreamInterface $dest   Stream to write to
+     * @param int             $maxLen Maximum number of bytes to read. Pass -1
+     *                                to read the entire stream.
+     *
+     * @throws \RuntimeException on error.
+     */
+    public static function copyToStream(StreamInterface $source, StreamInterface $dest, $maxLen = -1)
+    {
+        $bufferSize = 8192;
+
+        if ($maxLen === -1) {
+            while (!$source->eof()) {
+                if (!$dest->write($source->read($bufferSize))) {
+                    break;
+                }
+            }
+        } else {
+            $remaining = $maxLen;
+            while ($remaining > 0 && !$source->eof()) {
+                $buf = $source->read(min($bufferSize, $remaining));
+                $len = strlen($buf);
+                if (!$len) {
+                    break;
+                }
+                $remaining -= $len;
+                $dest->write($buf);
+            }
+        }
     }
 }
