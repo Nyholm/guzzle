@@ -40,7 +40,7 @@ class InflateStream implements StreamInterface
 
     private function cloneResource($resource)
     {
-        $copy = \fopen('php://temp', 'rw+');
+        $copy = \fopen('php://temp', 'w+');
         while (!feof($resource)) {
             if (!fwrite($copy, fread($resource, 8192))) {
                 break;

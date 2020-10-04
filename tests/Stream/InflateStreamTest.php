@@ -21,7 +21,7 @@ class InflateStreamTest extends TestCase
     public function testInflatesStreamsWithFilename()
     {
         $content = $this->getGzipStringWithFilename('test');
-        $resource = \fopen('php://temp', 'rw+');
+        $resource = \fopen('php://temp', 'w+');
         fwrite($resource, $content);
         fseek($resource, 0);
 
