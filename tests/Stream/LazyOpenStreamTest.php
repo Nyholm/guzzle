@@ -3,6 +3,7 @@
 namespace GuzzleHttp\Tests\Stream;
 
 use GuzzleHttp\Stream\LazyOpenStream;
+use GuzzleHttp\Utils;
 use PHPUnit\Framework\TestCase;
 
 class LazyOpenStreamTest extends TestCase
@@ -68,5 +69,21 @@ class LazyOpenStreamTest extends TestCase
         fseek($r, 0);
         self::assertSame('foo', stream_get_contents($r));
         fclose($r);
+    }
+
+    public function testOpensFilesSuccessfully()
+    {
+        $stream = new LazyOpenStream(__FILE__, 'r');
+        $r = $stream->detach();
+        self::assertIsResource($r);
+        fclose($r);
+    }
+
+    public function testThrowsExceptionNotWarning()
+    {
+        $stream = new LazyOpenStream('/path/to/does/not/exist', 'r');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Unable to open /path/to/does/not/exist using mode r');
+        $stream->getContents();
     }
 }

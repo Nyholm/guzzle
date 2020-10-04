@@ -244,20 +244,6 @@ class UtilsTest extends TestCase
         self::assertSame('', (string)$s2);
     }
 
-    public function testOpensFilesSuccessfully()
-    {
-        $r = Utils::tryFopen(__FILE__, 'r');
-        self::assertIsResource($r);
-        fclose($r);
-    }
-
-    public function testThrowsExceptionNotWarning()
-    {
-        $this->expectException('RuntimeException', 'Unable to open /path/to/does/not/exist using mode r');
-
-        Utils::tryFopen('/path/to/does/not/exist', 'r');
-    }
-
     public function testMessageBodySummaryWithSmallBody()
     {
         $message = new Response(200, [], 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.');
